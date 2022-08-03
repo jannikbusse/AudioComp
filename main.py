@@ -114,9 +114,7 @@ while curr < length_in_min * 60:
     curr = max + random.randint(min_pause_in_sec, max_pause_in_sec)
 
 
-audioClip = mpe.CompositeAudioClip(res)
-audioClip.set_duration(length_in_min * 60)
-audioClip.set_start(args.start_offset, change_end=False)
+audioClip = mpe.CompositeAudioClip(res).set_duration(length_in_min * 60).set_start(args.start_offset, change_end=False)
 
 for k in files:
     print(k + " was used " + str(usedir[k]) + " times")
