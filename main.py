@@ -36,8 +36,8 @@ mixing = args.mix
 
 usedir = {}
 
-audioClip = AudioFileClip("silence.mp3")
-silence_clip = AudioFileClip(silence_file)
+#audioClip = AudioFileClip("silence.mp3")
+#silence_clip = AudioFileClip(silence_file)
 
 """ def add_silence(seconds):
     global audioClip
@@ -47,12 +47,12 @@ silence_clip = AudioFileClip(silence_file)
         final_clip = concatenate_audioclips([audioClip, silence_clip])
         audioClip = final_clip """
 
-def concatenate_audio_moviepy(clip):
+""" def concatenate_audio_moviepy(clip):
     global audioClip
     clip.fps = 44100
     
     final_clip = concatenate_audioclips([audioClip, clip.fx(afx.audio_normalize).volumex(0.7)])
-    audioClip = final_clip
+    audioClip = final_clip """
 
 """ def mix_clips(clips): #todo shift clips back and forth
     for s in clips:
@@ -86,32 +86,37 @@ print("max audio overlays       = " + str(mixing))
 files = os.listdir(args.folder)
 
 # if a background sound is given set background clip and remove it from the file list
+
+
+res = []
 if args.background != "":
     files.remove(args.background)
-    background = AudioFileClip(args.folder +"/"+ args.background)
-    while audioClip.duration + background.duration < length_in_min * 60:
-        concatenate_audio_moviepy(background)
-    concatenate_audio_moviepy(background.set_duration(length_in_min * 60 - audioClip.duration))
-
+    audioClip = afx.audio_loop(AudioFileClip(args.folder+"/"+args.background, fps=44100), duration=length_in_min * 60).fx(afx.audio_fadeout, duration=2).fx(afx.audio_normalize)
+    res.append(audioClip)
 
 #clips = [AudioFileClip(args.folder+"/"+f) for f in files]
 
 for f in files:
     usedir[f] = 0
 
-
 #add_silence(3)
 print("\n---USAGE---")
 
 curr = random.randint(min_pause_in_sec, max_pause_in_sec)
-res = []
-while curr < length_in_min * 60:
-    help = [AudioFileClip(args.folder + "/"+ f).set_start(curr+random.randint(0, args.offset)) for f in random.sample(files, random.randint(1, mixing))]
-    res.extend(help)
-    curr = max([r.end for r in help]) + random.randint(min_pause_in_sec, max_pause_in_sec)
 
-res.append(audioClip)
+while curr < length_in_min * 60:
+    max = 0
+    for f in files:
+        clip = AudioFileClip(args.folder + "/"+ f, fps=44100).set_start(curr+random.randint(0, args.offset)).fx(afx.audio_normalize)
+        if clip.end > max:
+            max = clip.end
+        res.append(clip)
+    curr = max + random.randint(min_pause_in_sec, max_pause_in_sec)
+
+
 audioClip = mpe.CompositeAudioClip(res)
+audioClip.set_duration(length_in_min * 60)
+audioClip.set_start(args.start_offset, change_end=False)
 
 for k in files:
     print(k + " was used " + str(usedir[k]) + " times")
