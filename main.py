@@ -26,7 +26,7 @@ if not (args.background == "" or os.path.isfile(args.folder +"/"+ args.backgroun
     parser.error("Background audio file not found")
 
 
-silence_file = "silence.mp3"
+#silence_file = "silence.mp3"
 length_in_min = args.duration
 min_pause_in_sec = args.min_silence
 max_pause_in_sec = args.max_silence
@@ -106,7 +106,7 @@ curr = random.randint(min_pause_in_sec, max_pause_in_sec)
 
 while curr < length_in_min * 60:
     max = 0
-    for f in files:
+    for f in random.sample(files, mixing):
         clip = AudioFileClip(args.folder + "/"+ f, fps=44100).set_start(curr+random.randint(0, args.offset)).fx(afx.audio_normalize)
         if clip.end > max:
             max = clip.end
