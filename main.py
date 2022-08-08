@@ -1,7 +1,5 @@
-from email.mime import audio
-import sys, os, random
-from matplotlib import use
-from moviepy.editor import concatenate_audioclips, AudioFileClip, afx
+import os, random
+from moviepy.editor import AudioFileClip, afx
 import moviepy.editor as mpe
 import argparse
 
@@ -25,88 +23,57 @@ if not os.path.isdir(args.folder):
 if not (args.background == "" or os.path.isfile(args.folder +"/"+ args.background)):
     parser.error("Background audio file not found")
 
+if args.mix < 1:
+    parser.error("Mix must be at least 1")
 
-#silence_file = "silence.mp3"
+
+
 length_in_min = args.duration
 min_pause_in_sec = args.min_silence
 max_pause_in_sec = args.max_silence
 mixing = args.mix
 
-#current_mp3_time = 0
 
 usedir = {}
 
-#audioClip = AudioFileClip("silence.mp3")
-#silence_clip = AudioFileClip(silence_file)
-
-""" def add_silence(seconds):
-    global audioClip
-    global silence_clip
-    
-    for i in range(int(float(seconds)/silence_clip.duration)):
-        final_clip = concatenate_audioclips([audioClip, silence_clip])
-        audioClip = final_clip """
-
-""" def concatenate_audio_moviepy(clip):
-    global audioClip
-    clip.fps = 44100
-    
-    final_clip = concatenate_audioclips([audioClip, clip.fx(afx.audio_normalize).volumex(0.7)])
-    audioClip = final_clip """
-
-""" def mix_clips(clips): #todo shift clips back and forth
-    for s in clips:
-        usedir[s] += 1
-
-    new_audioclip = mpe.CompositeAudioClip([AudioFileClip("input/"+c) for c in clips])
-    return new_audioclip """
 
 def safe_clip():
-    audioClip.write_audiofile("out.mp3", fps=44100)
+    audioClip.write_audiofile(args.output, fps=44100)
 
-#if len(sys.argv) <= 2:
- #   exit()
-
-"""
-length_in_min    = int(sys.argv[1])
-min_pause_in_sec = int(sys.argv[2])
-max_pause_in_sec = int(sys.argv[3])
-mixing =           max(int(sys.argv[4]), 1)
-if len(sys.argv) > 5:
-    background_clip = sys.argv[5]
-else:
-    background_clip = None
-"""
-
-print("length                   = " + str(length_in_min))
-print("min pause                = " + str(min_pause_in_sec))
-print("max pause                = " + str(max_pause_in_sec))
+print("length                   = " + str(length_in_min)+" min")
+print("min pause                = " + str(min_pause_in_sec)+" sec")
+print("max pause                = " + str(max_pause_in_sec)+" sec")
 print("max audio overlays       = " + str(mixing))
+print("output file              = " + args.output)
+print("background audio file    = " + (args.background if args.background != "" else "none"))
+print("start offset             = " + str(args.start_offset)+" sec")
 
-files = os.listdir(args.folder)
+files = list(filter(lambda f: os.path.isfile(args.folder + "/" + f) and f.endswith((".mp3", ".m4a")), os.listdir(args.folder)))
 
 # if a background sound is given set background clip and remove it from the file list
 
 
 res = []
 if args.background != "":
-    files.remove(args.background)
-    audioClip = afx.audio_loop(AudioFileClip(args.folder+"/"+args.background, fps=44100), duration=length_in_min * 60).fx(afx.audio_fadeout, duration=2).fx(afx.audio_normalize)
+    try:
+        files.remove(args.background)
+    except:
+        pass
+    audioClip = afx.audio_loop(AudioFileClip(args.folder+"/"+args.background, fps=44100), duration=length_in_min * 60).fx(afx.audio_fadeout, duration=2).fx(afx.audio_normalize).volumex(0.5)
     res.append(audioClip)
 
-#clips = [AudioFileClip(args.folder+"/"+f) for f in files]
 
 for f in files:
     usedir[f] = 0
 
-#add_silence(3)
 print("\n---USAGE---")
 
 curr = random.randint(min_pause_in_sec, max_pause_in_sec)
 
 while curr < length_in_min * 60:
     max = 0
-    for f in random.sample(files, mixing):
+    for f in random.sample(files, random.randint(1,mixing)):
+        usedir[f] += 1
         clip = AudioFileClip(args.folder + "/"+ f, fps=44100).set_start(curr+random.randint(0, args.offset)).fx(afx.audio_normalize)
         if clip.end > max:
             max = clip.end
